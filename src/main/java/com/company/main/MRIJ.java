@@ -4,6 +4,7 @@ import com.company.mappers.first_job.SelectCarMapper;
 import com.company.mappers.first_job.SelectCustomerMapper;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Scan;
@@ -47,9 +48,12 @@ public class MRIJ extends Configured implements Tool {
         ControlledJob controlledJob2 = new ControlledJob(config);
         controlledJob2.setJobName("Select car");
 
-        Job job = controlledJob1.getJob();
+        ControlledJob controlledJob3 = new ControlledJob(config);
 
+        Job job = controlledJob1.getJob();
         Job job1 = controlledJob2.getJob();
+
+        Job job3 = controlledJob3.getJob();
 
         TableMapReduceUtil.initTableMapperJob(
                 "customer",
@@ -69,15 +73,20 @@ public class MRIJ extends Configured implements Tool {
                 job1
         );
 
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        /*FileOutputFormat.setOutputPath(job, new Path(args[1]));
         FileOutputFormat.setOutputPath(job1, new Path(args[2]));
-
+*/
         job.setJarByClass(MRIJ.class);
         job1.setJarByClass(MRIJ.class);
+
+        DistributedCache.addCacheFile(new Path(args[3]).toUri(), job.getConfiguration());
+        DistributedCache.addCacheFile(new Path(args[4]).toUri(), job1.getConfiguration());
+        DistributedCache.addCacheFile(new Path(args[4]).toUri(), job3.getConfiguration());
 
         JobControl control = new JobControl("MRIJ");
         control.addJob(controlledJob1);
         control.addJob(controlledJob2);
+        control.addJob(controlledJob3);
         control.run();
 
         return 0;
