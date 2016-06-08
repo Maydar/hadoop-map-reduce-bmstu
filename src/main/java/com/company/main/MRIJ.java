@@ -1,9 +1,17 @@
 package com.company.main;
 
+import com.company.mappers.first_job.SelectMapper;
+import groovy.json.internal.Byt;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.MultiTableInputFormat;
+import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hive.ql.io.ORCFileStorageFormatDescriptor;
 import org.apache.hadoop.hive.ql.io.RCFileInputFormat;
 import org.apache.hadoop.hive.ql.io.orc.OrcInputFormat;
@@ -12,6 +20,8 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.chain.Chain;
+import org.apache.hadoop.mapreduce.lib.chain.ChainMapper;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
@@ -20,6 +30,8 @@ import org.apache.hive.hcatalog.mapreduce.HCatInputFormat;
 import org.apache.hive.hcatalog.rcfile.RCFileMapReduceInputFormat;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.StringTokenizer;
 
 /**
@@ -58,12 +70,31 @@ public class MRIJ extends Configured implements Tool {
 
     public int run(String[] args) throws Exception {
 
+
+
+        List<Scan> scans = new ArrayList<Scan>();
+
+        Scan scan_customer = new Scan();
+        scan_customer.setAttribute("scan.attributes.table.name",
+                Bytes.toBytes("customer"));
+
+        scans.add(scan_customer);
+
+        Scan scan_car = new Scan();
+        scan_car.setAttribute("scan.attributes.table.name", Bytes.toBytes("car"));
+        scans.add(scan_car);
+
         Configuration config = HBaseConfiguration.create();
         Job job = Job.getInstance(config,
                 "MRIJ");
 
-        job.setInputFormatClass(RCFileMapReduceInputFormat.class);
-
+        TableMapReduceUtil.initTableMapperJob(
+                scans,
+                SelectMapper.class,
+                IntWritable.class,
+                Text.class,
+                job
+        );
 
         /*
 
@@ -91,7 +122,14 @@ public class MRIJ extends Configured implements Tool {
         return job.waitForCompletion(true) ? 0 : 1;
 */
 
+
         job.setJarByClass(MRIJ.class);
+
+        ChainMapper.addMapper(job, SelectMapper.class, ImmutableBytesWritable.class, Result.class,
+                            IntWritable.class, Text.class, config);
+
+
+
         return job.waitForCompletion(true) ? 0 : 1;
     }
 
