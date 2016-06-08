@@ -4,6 +4,7 @@ import com.company.mappers.first_job.SelectCarMapper;
 import com.company.mappers.first_job.SelectCustomerMapper;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
@@ -13,6 +14,9 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.jobcontrol.ControlledJob;
+import org.apache.hadoop.mapreduce.lib.jobcontrol.JobControl;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
@@ -37,10 +41,15 @@ public class MRIJ extends Configured implements Tool {
 
 
         Configuration config = HBaseConfiguration.create();
-        Job job = Job.getInstance(config,
-                "Select customer");
+        ControlledJob controlledJob1 = new ControlledJob(config);
+        controlledJob1.setJobName("Select customer");
 
-        Job job1 = Job.getInstance(config, "Select car");
+        ControlledJob controlledJob2 = new ControlledJob(config);
+        controlledJob2.setJobName("Select car");
+
+        Job job = controlledJob1.getJob();
+
+        Job job1 = controlledJob2.getJob();
 
         TableMapReduceUtil.initTableMapperJob(
                 "customer",
@@ -60,39 +69,18 @@ public class MRIJ extends Configured implements Tool {
                 job1
         );
 
-
-
-        /*
-
-        Configuration conf = new Configuration();
-
-        Job job = Job.getInstance(,
-
-                "wordcount");
-
-        job.setOutputKeyClass(Text.class);
-
-        job.setOutputValueClass(IntWritable.class);
-
-        job.setMapperClass(WordCountMap.class);
-
-        job.setReducerClass(WordCountReduce.class);
-
-
-        FileInputFormat.setInputPaths(job, new Path(args[0]));
-
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
-
-        job.setJarByClass(MRIJ.class);
-
-        return job.waitForCompletion(true) ? 0 : 1;
-*/
-
+        FileOutputFormat.setOutputPath(job1, new Path(args[2]));
 
         job.setJarByClass(MRIJ.class);
         job1.setJarByClass(MRIJ.class);
 
-        return job.waitForCompletion(true) ? 0 : 1;
+        JobControl control = new JobControl("MRIJ");
+        control.addJob(controlledJob1);
+        control.addJob(controlledJob2);
+        control.run();
+
+        return 0;
     }
 
     public static void main(String[] args) throws Exception {
