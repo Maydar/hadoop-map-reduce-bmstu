@@ -1,98 +1,88 @@
 package com.company.main;
 
+import com.company.mappers.first_job.SelectMapperRestaurants;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hive.ql.io.ORCFileStorageFormatDescriptor;
-import org.apache.hadoop.hive.ql.io.RCFileInputFormat;
-import org.apache.hadoop.hive.ql.io.orc.OrcInputFormat;
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.jobcontrol.ControlledJob;
+import org.apache.hadoop.mapreduce.lib.jobcontrol.JobControl;
+import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.hive.hcatalog.data.DefaultHCatRecord;
+import org.apache.hive.hcatalog.data.schema.HCatSchema;
 import org.apache.hive.hcatalog.mapreduce.HCatInputFormat;
-import org.apache.hive.hcatalog.rcfile.RCFileMapReduceInputFormat;
+import org.apache.hive.hcatalog.mapreduce.HCatOutputFormat;
+import org.apache.hive.hcatalog.mapreduce.InputJobInfo;
+import org.apache.hive.hcatalog.mapreduce.OutputJobInfo;
 
-import java.io.IOException;
-import java.util.StringTokenizer;
 
-/**
- * Created by maydar on 27.12.15.
- */
 public class MRIJ extends Configured implements Tool {
 
 
-    public static class WordCountMap extends Mapper<Object, Text, Text, IntWritable> {
-        @Override
-        protected void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-            String line = value.toString();
-            StringTokenizer tokenizer = new StringTokenizer(line);
-            while (tokenizer.hasMoreTokens()) {
-                String nextToken = tokenizer.nextToken();
-                context.write(new Text(nextToken), new IntWritable(1));
-            }
-        }
-    }
-
-
-    public static class WordCountReduce extends Reducer<Text, IntWritable, Text, IntWritable> {
-        @Override
-        protected void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
-            int sum = 0;
-
-            for (IntWritable val : values) {
-
-                sum += val.get();
-
-            }
-
-            context.write(key, new IntWritable(sum));
-        }
-    }
 
     public int run(String[] args) throws Exception {
 
-        Configuration config = HBaseConfiguration.create();
-        Job job = Job.getInstance(config,
-                "MRIJ");
+        Configuration conf = getConf();
+        args = new GenericOptionsParser(conf, args).getRemainingArgs();
 
-        job.setInputFormatClass(RCFileMapReduceInputFormat.class);
+        String inputTableName = args[0];
+        String outputTableName = args[1];
+        String dbName = null;
+        //InputJobInfo.create(dbName, inputTableName, null, null);
 
+        ControlledJob controlledJobselectrest = new ControlledJob(conf);
+        controlledJobselectrest.setJobName("RestaurantSelectJob");
 
-        /*
-
-                Configuration conf = new Configuration();
-
-        Job job = Job.getInstance(,
-
-                "wordcount");
-
-        job.setOutputKeyClass(Text.class);
-
-        job.setOutputValueClass(IntWritable.class);
-
-        job.setMapperClass(WordCountMap.class);
-
-        job.setReducerClass(WordCountReduce.class);
+        ControlledJob controlledJobselectvisitor = new ControlledJob(conf);
+        controlledJobselectvisitor.setJobName("VisitorSelectJob");
 
 
-        FileInputFormat.setInputPaths(job, new Path(args[0]));
 
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        Job restaurantselectjob = controlledJobselectrest.getJob();
+        HCatInputFormat.setInput(restaurantselectjob, dbName, "restaurantsrc");
+        // initialize HCatOutputFormat
 
-        job.setJarByClass(MRIJ.class);
+        restaurantselectjob.setInputFormatClass(HCatInputFormat.class);
+        restaurantselectjob.setJarByClass(MRIJ.class);
+        restaurantselectjob.setMapperClass(SelectMapperRestaurants.class);
+        restaurantselectjob.setMapOutputKeyClass(IntWritable.class);
+        restaurantselectjob.setMapOutputValueClass(IntWritable.class);
+        restaurantselectjob.setOutputKeyClass(WritableComparable.class);
+        restaurantselectjob.setOutputValueClass(DefaultHCatRecord.class);
+        HCatOutputFormat.setOutput(restaurantselectjob, OutputJobInfo.create(dbName, outputTableName, null));
+        HCatSchema s = HCatOutputFormat.getTableSchema(conf);
+        System.err.println("INFO: output schema explicitly set for writing:"
+                + s);
+        HCatOutputFormat.setSchema(restaurantselectjob, s);
+        restaurantselectjob.setOutputFormatClass(HCatOutputFormat.class);
 
-        return job.waitForCompletion(true) ? 0 : 1;
-*/
+        Job visitorselectjob = controlledJobselectvisitor.getJob();
+        HCatInputFormat.setInput(visitorselectjob, dbName, "restaurantsrc");
+        // initialize HCatOutputFormat
 
-        job.setJarByClass(MRIJ.class);
-        return job.waitForCompletion(true) ? 0 : 1;
+        visitorselectjob.setInputFormatClass(HCatInputFormat.class);
+        visitorselectjob.setJarByClass(MRIJ.class);
+        visitorselectjob.setMapperClass(SelectMapperRestaurants.class);
+        visitorselectjob.setMapOutputKeyClass(IntWritable.class);
+        visitorselectjob.setMapOutputValueClass(IntWritable.class);
+        visitorselectjob.setOutputKeyClass(WritableComparable.class);
+        visitorselectjob.setOutputValueClass(DefaultHCatRecord.class);
+        HCatOutputFormat.setOutput(visitorselectjob, OutputJobInfo.create(dbName, outputTableName, null));
+        HCatSchema s1 = HCatOutputFormat.getTableSchema(conf);
+        System.err.println("INFO: output schema explicitly set for writing:"
+                + s1);
+        HCatOutputFormat.setSchema(visitorselectjob, s1);
+        visitorselectjob.setOutputFormatClass(HCatOutputFormat.class);
+
+        JobControl control = new JobControl("MRIJ");
+        control.addJob(controlledJobselectrest);
+        control.addJob(controlledJobselectvisitor);
+        control.run();
+
+        return 0;
     }
 
     public static void main(String[] args) throws Exception {
