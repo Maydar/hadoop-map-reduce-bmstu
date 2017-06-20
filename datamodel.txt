@@ -1,0 +1,18 @@
+Dimension tables:
+
+Key [fields] table
+
+1 asia india lineorder
+
+1 1992 ddate
+
+Fact tables:
+
+1 2 3 4 5 6 7 8 fk
+1 2 3 4 5 6 7 8 fk
+1 2 3 4 5 6 7 8 fk
+a b c d e f g h measurename   m
+
+Clauses
+
+linorder : region = asia

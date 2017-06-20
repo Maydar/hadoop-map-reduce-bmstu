@@ -1,0 +1,4 @@
+1 asia india first_table
+2 asia japan first_table
+3 europe slovenia first_table
+4 america usa first_table
