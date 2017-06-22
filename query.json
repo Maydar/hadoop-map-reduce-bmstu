@@ -1,0 +1,54 @@
+{
+    "select": [{
+        "field": "c_nation",
+        "table": "customer"
+    }, {
+        "field": "s_nation",
+        "table": "supplier"
+    }, {
+        "field": "d_year",
+        "table": "ddate"
+    }, {
+        "field": "lo_revenue",
+        "table": "lineorder"
+    }
+    ],
+    "tables": [{
+        "name": "customer",
+        "fields": "c_key,c_city,c_nation,c_region,c_supplier_fk,c_ddate_fk,c_lineorder_fk",
+        "type": "dim"
+    },{
+        "name": "supplier",
+        "fields": "s_key,s_city,s_nation,c_address,c_region",
+        "type": "dim"
+    },{
+        "name": "ddate",
+        "fields": "d_key,d_year",
+        "type": "dim"
+    },{
+        "name": "lineorder",
+        "fields": "lo_key,lo_revenue,lo_supplier_fk,lo_ddate_fk,lo_customer_fk",
+        "type": "fact"
+    }],
+    "restrictions": [{
+        "field": "c_region",
+        "table": "customer",
+        "value": "asia",
+        "operation": "eq"
+    },{
+        "field": "s_region",
+        "table": "supplier",
+        "value": "asia",
+        "operation": "eq"
+    },{
+        "field": "d_year",
+        "table": "ddate",
+        "value": "1992",
+        "operation": "gt"
+    },{
+        "field": "lo_revenue",
+        "table": "lineorder",
+        "value": "40000",
+        "operation": "gt"
+    }]
+}

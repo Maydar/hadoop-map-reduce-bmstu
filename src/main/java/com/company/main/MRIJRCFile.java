@@ -32,11 +32,16 @@ public class MRIJRCFile extends Configured implements Tool {
         Job job = new Job(conf, "firstJob");
         job.setJarByClass(MRIJRCFile.class);
 
+
         Path firstTablePath = new Path(args[0]);
         Path secondTablePath = new Path(args[1]);
         Path factTablePath = new Path(args[2]);
         Path outFirstJobPath = new Path(args[3]);
         Path outSecondJobPath = new Path(args[4]);
+        Path queryPath = new Path(args[5]);
+
+        DistributedCache.addCacheFile(queryPath.toUri(), conf);
+
 
         MultipleInputs.addInputPath(job, firstTablePath, RCFileMapReduceInputFormat.class, FirstTableMapper.class);
         MultipleInputs.addInputPath(job, secondTablePath, RCFileMapReduceInputFormat.class, SecondTableMapper.class);

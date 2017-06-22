@@ -1,7 +1,7 @@
 package com.company.main;
 
-import com.company.mappers.mrij.first_job.FirstTableMapper;
-import com.company.mappers.mrij.first_job.SecondTableMapper;
+import com.company.mappers.mrij.first_job.CustomerTableMapper;
+import com.company.mappers.mrij.first_job.DateTableMapper;
 import com.company.mappers.mrij.second_job.FactTableMapper;
 import com.company.mappers.mrij.second_job.ResultReducer;
 import org.apache.hadoop.conf.Configuration;
@@ -32,9 +32,12 @@ public class MRIJ extends Configured implements Tool {
         Path factTablePath = new Path(args[2]);
         Path outFirstJobPath = new Path(args[3]);
         Path outSecondJobPath = new Path(args[4]);
+        Path queryPath = new Path(args[5]);
 
-        MultipleInputs.addInputPath(job, firstTablePath, TextInputFormat.class, FirstTableMapper.class);
-        MultipleInputs.addInputPath(job, secondTablePath, TextInputFormat.class, SecondTableMapper.class);
+        DistributedCache.addCacheFile(queryPath.toUri(), job.getConfiguration());
+
+        MultipleInputs.addInputPath(job, firstTablePath, TextInputFormat.class, CustomerTableMapper.class);
+        MultipleInputs.addInputPath(job, secondTablePath, TextInputFormat.class, DateTableMapper.class);
 
         job.setOutputFormatClass(TextOutputFormat.class);
         FileOutputFormat.setOutputPath(job, outFirstJobPath);
@@ -65,61 +68,6 @@ public class MRIJ extends Configured implements Tool {
 
 
         return 0;
-//        Scan scan_customer = new Scan();
-//        scan_customer.setAttribute("scan.attributes.table.name",
-//                Bytes.toBytes("customer"));
-//
-//        Scan scan_car = new Scan();
-//        scan_car.setAttribute("scan.attributes.table.name", Bytes.toBytes("car"));
-//
-//
-//        Configuration config = HBaseConfiguration.create();
-//        ControlledJob controlledJob1 = new ControlledJob(config);
-//        controlledJob1.setJobName("Select customer");
-//
-//        ControlledJob controlledJob2 = new ControlledJob(config);
-//        controlledJob2.setJobName("Select car");
-//
-//        ControlledJob controlledJob3 = new ControlledJob(config);
-//
-//        Job job = controlledJob1.getJob();
-//        Job job1 = controlledJob2.getJob();
-//
-//        Job job3 = controlledJob3.getJob();
-//
-//        TableMapReduceUtil.initTableMapperJob(
-//                "customer",
-//                scan_customer,
-//                SelectCustomerMapper.class,
-//                IntWritable.class,
-//                Text.class,
-//                job
-//        );
-//
-//        TableMapReduceUtil.initTableMapperJob(
-//                "car",
-//                scan_car,
-//                SelectCarMapper.class,
-//                IntWritable.class,
-//                Text.class,
-//                job1
-//        );
-//
-//        /*FileOutputFormat.setOutputPath(job, new Path(args[1]));
-//        FileOutputFormat.setOutputPath(job1, new Path(args[2]));
-//*/
-//        job.setJarByClass(MRIJ.class);
-//        job1.setJarByClass(MRIJ.class);
-//
-//        DistributedCache.addCacheFile(new Path(args[3]).toUri(), job.getConfiguration());
-//        DistributedCache.addCacheFile(new Path(args[4]).toUri(), job1.getConfiguration());
-//        DistributedCache.addCacheFile(new Path(args[4]).toUri(), job3.getConfiguration());
-//
-//        JobControl control = new JobControl("MRIJ");
-//        control.addJob(controlledJob1);
-//        control.addJob(controlledJob2);
-//        control.addJob(controlledJob3);
-//        control.run();
 
     }
 
